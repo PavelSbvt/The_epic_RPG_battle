@@ -200,3 +200,40 @@ class Rich:
             table.add_row(*[str(cell) for cell in row])
 
         console.print(table)
+
+
+    @staticmethod
+    def print_message(message_text: str, sender: str = None) -> None:
+        """
+        Функция для вывода сообщения в консоль с логом [MESSAGE]
+
+        :param message_text: str - принимает текст сообщения
+        :param sender: str - имя отправителя сообщения (дефолтно = None)
+
+        :return: None
+        """
+
+        message_text = message_text.replace("\\", "")
+
+        if sender:
+            console.log(f"[#BDECB6][MESSAGE] Сообщение {sender}: {message_text}[/#BDECB6]",
+                        _stack_offset=2)
+
+        else:
+            console.log(f"[#BDECB6][MESSAGE] Сообщение: {message_text}[/#BDECB6]",
+                        _stack_offset=2)
+
+
+    @staticmethod
+    def input_data(input_label: str):
+        """
+        Функция для красивого оформления ввода данных через терминал с использованием
+         библиотеки Rich
+        :param input_label: Str - Принимает строку с заголовком ввода (пример: 'Автор',
+         чтобы в логе ввода было 'Автор: ')
+        :return: Optional
+        """
+
+        value = console.input(f"[bold orange1][INPUT] {input_label}: [/bold orange1]")
+
+        return value
