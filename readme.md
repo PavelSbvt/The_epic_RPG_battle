@@ -25,6 +25,22 @@ git rm -r --cached .idea
 ```bash
 git rm -r --cached -f .idea
 ```
+
+Установить pyinstaller:
+```bash
+pip install pyinstaller
+```
+
+Собрать spec файл с помощью pyinstaller можно командой:
+```bash
+pyi-makespec --onedir --contents-directory "." --name EpicRPG  --windowed --icon="resources/images/icons/icon_pdf_maker_255_size.ico" --paths="src" --add-data="resources;resources" --add-data="src;src" --hidden-import="PyQt6" --hidden-import="rich" --hidden-import="PIL" src/main.py  
+```
+
+Собрать exe файл с помощью pyinstaller:
+```bash
+pyinstaller EpicRPG.spec
+```
+
 ---
 > Задание на Codewars:
 >
