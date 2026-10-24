@@ -4,6 +4,7 @@ from pathlib import Path
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QIcon
 
+from core.settings_manager import Settings
 from gui.loading_window import MyLoadingWindow
 # from gui.utils.windows_animations import AnimateManager
 from utils.output_rich import Rich
@@ -63,12 +64,19 @@ def start_without_loading_window() -> None:
 
 
 if __name__ == "__main__":
+
+    Settings.print_settings()
+    Rich.print_spacer()
+
     App = QApplication(sys.argv)
     icon_path = Path('resources/images/icons/icon_pdf_maker_255_size.ico')
     App.setWindowIcon(QIcon(f"{icon_path.as_posix()}"))
 
-
-    Rich.print_spacer()
-    start_with_loading_window()
+    if Settings.get_flag_show_loading_window():
+        Rich.print_spacer()
+        start_with_loading_window()
+    else:
+        Rich.print_spacer()
+        start_without_loading_window()
 
     sys.exit(App.exec())
