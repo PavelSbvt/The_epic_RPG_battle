@@ -33,6 +33,7 @@ def handle_client(conn, addr):
         clients.remove(conn)
         conn.close()
 
+
 def main():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -44,6 +45,3 @@ def main():
         conn, addr = server.accept()
         clients.append(conn)
         threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
-
-if __name__ == "__main__":
-    main()
