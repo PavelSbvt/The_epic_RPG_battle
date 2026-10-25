@@ -26,7 +26,7 @@ git rm -r --cached -f .idea
 
 Собрать spec файл с помощью pyinstaller можно командой:
 ```bash
-pyi-makespec --onedir --contents-directory "." --name Server  --windowed --icon="resources/images/icons/icon_pdf_maker.ico" --paths="src" --add-data="resources;resources" --add-data="src;src" --hidden-import="PyQt6" --hidden-import="rich" src/main.py
+pyi-makespec --onedir --contents-directory "." --name ServerEpicRPG  --windowed --icon="resources/images/icons/epic-rpg-server-icon.ico" --paths="src" --add-data="resources;resources" --add-data="src;src" --hidden-import="PyQt6" --hidden-import="rich" src/main.py
 ```
 
 Собрать exe файл с помощью pyinstaller:
