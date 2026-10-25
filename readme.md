@@ -31,7 +31,7 @@ pyi-makespec --onedir --contents-directory "." --name ServerEpicRPG  --windowed 
 
 Собрать exe файл с помощью pyinstaller:
 ```bash
-pyinstaller Server.spec
+pyinstaller ServerEpicRPG.spec
 ```
 
 ![kitten-working-with-server](doc/images/readme/grey-kitten-working-with-server.jpeg)
