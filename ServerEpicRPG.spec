@@ -21,7 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='Server',
+    name='ServerEpicRPG',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -32,7 +32,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['resources/images/icons/icon_pdf_maker.ico'],
+    icon=['resources/images/icons/epic-rpg-server-icon.ico'],
     contents_directory='.',
 )
 coll = COLLECT(
@@ -42,5 +42,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='Server',
+    name='ServerEpicRPG',
 )
