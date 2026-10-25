@@ -1,4 +1,5 @@
 from pathlib import Path
+from wsgiref.simple_server import server_version
 
 from PyQt6.QtCore import QPoint, QTimer, pyqtSignal, Qt, QThread
 from PyQt6.QtWidgets import QWidget
@@ -6,9 +7,8 @@ from PyQt6.QtGui import QCloseEvent
 from PyQt6.uic import loadUi
 
 from utils.output_rich import Rich
-from core.server import GameServer
+from core.server import GameServer, LOGS_QUEUE
 from gui.utils.windows_animations import AnimateManager
-from gui.utils.windows_functions import center_window
 from gui.utils.fonts import Fonts
 
 
@@ -28,7 +28,6 @@ class ServerThread(QThread):
 
         :return: None
         """
-
         self.server.start()
 
 
@@ -72,11 +71,16 @@ class MainWindow(QWidget):
 
         self.labelTitle.setFont(Fonts.get_qfont("JetBrains_Regular", 14))
         self.buttonRunServer.setFont(Fonts.get_qfont("JetBrains_Medium", 8))
+        self.textEditForLogs.setFont(Fonts.get_qfont("JetBrains_Medium", 8))
 
         self.buttonRunServer.clicked.connect(self.start_server)
 
         self.buttonStopServer.setVisible(False)
         self.buttonStopServer.clicked.connect(self.stop_server)
+
+        self.log_timer = QTimer(self)
+        self.log_timer.timeout.connect(self.check_logs)
+        self.log_timer.start(100)
 
 
     def closeEvent(self, event: QCloseEvent) -> None:
@@ -102,9 +106,13 @@ class MainWindow(QWidget):
 
         if self.server_thread is not None and self.server_thread.isRunning():
             Rich.warning_log("Сервер уже запущен!")
+            self.add_log("Сервер уже запущен!")
             return
 
-        Rich.debug_log("Запуск сервера в фоновом режиме...")
+        message = "Запуск сервера в фоновом режиме..."
+
+        Rich.debug_log(message)
+        self.add_log(message)
 
         self.server_instance = GameServer()
 
@@ -123,7 +131,10 @@ class MainWindow(QWidget):
         """
 
         if self.server_thread is not None and self.server_thread.isRunning():
-            Rich.debug_log("Остановка сервера...")
+            message = "Остановка сервера..."
+
+            Rich.debug_log(message)
+            self.add_log(message)
 
             self.server_thread.stop()
 
@@ -132,4 +143,29 @@ class MainWindow(QWidget):
             self.buttonStopServer.setVisible(False)
 
             self.server_thread = None
+
             self.server_instance = None
+
+
+    def add_log(self, message: str) -> None:
+        """
+        Функция для добавления логов для пользователя в TextEdit в окне сервера.
+        Принимает текст лога и добавляет этот его в TextEdit
+
+        :param message: str - принимает сообщение лога
+
+        :return: None.
+        """
+
+        self.textEditForLogs.append(message)
+
+    def check_logs(self) -> None:
+        """
+        Забирает сообщения из очереди и пишет их в TextEdit
+
+        :return: None.
+        """
+
+        while LOGS_QUEUE:
+            message = LOGS_QUEUE.pop(0)
+            self.add_log(message)
