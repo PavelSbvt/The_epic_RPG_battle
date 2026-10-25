@@ -3,17 +3,20 @@ import socket
 from utils.output_rich import Rich
 
 
+
+LOGS_QUEUE = []
+
 class GameServer:
     """
     Класс для работы игрового сервера
     """
 
-    def __init__(self, host='0.0.0.0', port=5555):
-        self.host = host
-        self.port = port
-        self.is_running = False
+    def __init__(self, host: str = '0.0.0.0', port: int =5555):
+        self.host: str = host
+        self.port: int = port
+        self.is_running: bool  = False
         self.server_socket = None
-        self.clients = []
+        self.clients: list = []
 
 
     def start(self) -> None:
@@ -30,7 +33,11 @@ class GameServer:
         self.server_socket.bind((self.host, self.port))
         self.server_socket.listen(2)
 
-        Rich.debug_log(f"Сервер запущен на {self.host}:{self.port}")
+        message = f"Сервер запущен на {self.host}:{self.port}"
+
+        Rich.debug_log(message)
+
+        LOGS_QUEUE.append(message)
 
         # Главный цикл сервера
         while self.is_running:
@@ -59,4 +66,8 @@ class GameServer:
         for client in self.clients:
             client.close()
         self.clients.clear()
-        Rich.debug_log("Сервер остановлен.")
+
+        message = "Сервер остановлен."
+        Rich.debug_log(message)
+
+        LOGS_QUEUE.append(message)
