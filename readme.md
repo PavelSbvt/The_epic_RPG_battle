@@ -33,3 +33,5 @@ pyi-makespec --onedir --contents-directory "." --name Server  --windowed --icon=
 ```bash
 pyinstaller Server.spec
 ```
+
+![kitten-working-with-server](doc/images/readme/grey-kitten-working-with-server.jpeg)
