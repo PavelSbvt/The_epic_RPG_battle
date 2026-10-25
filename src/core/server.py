@@ -1,47 +1,62 @@
 import socket
-import threading
 
 from utils.output_rich import Rich
 
 
-HOST = '0.0.0.0'   # слушаем на всех интерфейсах
-PORT = 5555        # любой свободный порт
+class GameServer:
+    """
+    Класс для работы игрового сервера
+    """
 
-clients = []       # список подключённых клиентов
+    def __init__(self, host='0.0.0.0', port=5555):
+        self.host = host
+        self.port = port
+        self.is_running = False
+        self.server_socket = None
+        self.clients = []
 
-def handle_client(conn, addr):
-    Rich.success_log(f"К серверу подключился: {addr}")
-    try:
-        while True:
-            data = conn.recv(1024)
-            if not data:
+
+    def start(self) -> None:
+        """
+        Функция для запуска сервера
+
+        :return: None
+        """
+
+        self.is_running = True
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.server_socket.bind((self.host, self.port))
+        self.server_socket.listen(2)
+
+        Rich.debug_log(f"Сервер запущен на {self.host}:{self.port}")
+
+        # Главный цикл сервера
+        while self.is_running:
+            try:
+                self.server_socket.settimeout(1.0)
+                conn, addr = self.server_socket.accept()
+                self.clients.append(conn)
+
+            except socket.timeout:
+                continue
+            except OSError:
                 break
-            message = data.decode('utf-8')
-            Rich.print_message(message, addr)
-
-            # Пересылаем всем остальным клиентам
-            for c in clients:
-                if c != conn:
-                    try:
-                        c.sendall(f"[{addr}] {message}".encode('utf-8'))
-                    except Exception:
-                        pass
-    except ConnectionResetError:
-        pass
-    finally:
-        Rich.simple_log(f"Пользователь {addr} отключился от сервера")
-        clients.remove(conn)
-        conn.close()
 
 
-def main():
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server.bind((HOST, PORT))
-    server.listen(2)   # ждём максимум 2 клиента
-    Rich.success_log(f"Сервер запущен на {HOST}:{PORT}.")
+    def stop(self) -> None:
+        """
+        Функция для остановки сервера
 
-    while True:
-        conn, addr = server.accept()
-        clients.append(conn)
-        threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
+        :return: None
+        """
+
+        self.is_running = False
+        if self.server_socket:
+            self.server_socket.close()
+
+        for client in self.clients:
+            client.close()
+        self.clients.clear()
+        Rich.debug_log("Сервер остановлен.")
