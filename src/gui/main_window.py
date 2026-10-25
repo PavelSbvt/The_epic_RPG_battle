@@ -71,12 +71,39 @@ class MainWindow(QWidget):
 
         self.labelTitle.setFont(Fonts.get_qfont("JetBrains_Regular", 14))
         self.buttonRunServer.setFont(Fonts.get_qfont("JetBrains_Medium", 8))
-        self.textEditForLogs.setFont(Fonts.get_qfont("JetBrains_Medium", 8))
+        self.textEditForLogs.setFont(Fonts.get_qfont("JetBrains_Medium", 10))
 
         self.buttonRunServer.clicked.connect(self.start_server)
 
         self.buttonStopServer.setVisible(False)
         self.buttonStopServer.clicked.connect(self.stop_server)
+
+        self.buttonRunServer.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.buttonStopServer.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        self.tab_widget.setTabVisible(1, False)
+
+        self.settings_path = Path("resources/images/icons/settings_pycharm_icon.png")
+        self.settingsButton.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.settingsButton.setStyleSheet(f"""
+                        QPushButton {{
+                            background-image: url({self.settings_path.as_posix()});
+                            border: none;
+                            background-repeat: no-repeat;
+                            background-position: center;
+                            background-color: transparent;
+                            border-radius: 5px;
+                        }}
+                        QPushButton:hover {{
+                            background-color: rgba(255, 255, 255, 0.08);
+                        }}
+                        QPushButton:pressed {{
+                            background-color: rgba(255, 255, 255, 0.15);
+                        }}
+                    """)
+        self.settingsButton.clicked.connect(self.open_settings_tab)
+
+        self.tab_widget.setFont(Fonts.get_qfont("JetBrains_Medium", 8))
 
         self.log_timer = QTimer(self)
         self.log_timer.timeout.connect(self.check_logs)
@@ -95,6 +122,16 @@ class MainWindow(QWidget):
         if self.server_thread is not None and self.server_thread.isRunning():
             self.server_thread.stop()
         event.accept()
+
+
+    def open_settings_tab(self) -> None:
+        """
+        Функция для открытия вкладки с настройками
+
+        :return: None
+        """
+
+        self.tab_widget.setCurrentIndex(1)
 
 
     def start_server(self) -> None:
