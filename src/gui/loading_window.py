@@ -6,7 +6,7 @@ from PyQt6.QtGui import QPixmap
 from PyQt6.uic import loadUi
 
 from utils.output_rich import Rich
-from gui.utils.windows_animations import AnimateManager
+from gui.utils.windows_animations import AnimationsManager
 from gui.utils.windows_functions import (center_window,
     background_window_by_time_of_day)
 
@@ -87,7 +87,7 @@ class MyLoadingWindow(QWidget):
         time_progress_bar_step = int(5000 // 130)
         self.timer_animation.start(time_progress_bar_step)
 
-        AnimateManager.animation_appearance_window(self, duration=700)
+        AnimationsManager.animation_appearance_window(self, duration=700)
 
         timer_time = 5000 / 1000
 
@@ -213,7 +213,7 @@ class MyLoadingWindow(QWidget):
             self.timer_animation.stop()
             self.progress_bar.setValue(100)
 
-        AnimateManager.animation_disappearance_and_closing(self, duration=1000)
+        AnimationsManager.animation_disappearance_and_closing(self, duration=1000)
 
 
     def mousePressEvent(self, event) -> None:
