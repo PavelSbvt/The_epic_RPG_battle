@@ -10,6 +10,7 @@ from utils.output_rich import Rich
 from core.server import GameServer, LOGS_QUEUE
 from gui.utils.windows_animations import AnimateManager
 from gui.utils.fonts import Fonts
+from utils.create_shortcut import check_build
 
 
 class ServerThread(QThread):
@@ -108,6 +109,11 @@ class MainWindow(QWidget):
         self.log_timer = QTimer(self)
         self.log_timer.timeout.connect(self.check_logs)
         self.log_timer.start(100)
+
+        self.labelShortcut.setFont(Fonts.get_qfont("JetBrains_Medium", 12))
+        self.buttonCreateShortcut.setFont(Fonts.get_qfont("JetBrains_Medium", 10))
+
+        self.buttonCreateShortcut.clicked.connect(check_build)
 
 
     def closeEvent(self, event: QCloseEvent) -> None:
