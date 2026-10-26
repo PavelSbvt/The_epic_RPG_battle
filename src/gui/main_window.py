@@ -9,6 +9,7 @@ from PyQt6.uic import loadUi
 from utils.output_rich import Rich
 from core.server import GameServer, LOGS_QUEUE
 from gui.utils.fonts import Fonts
+from gui.utils.windows_animations import AnimationsManager
 from utils.create_shortcut import check_build
 
 
@@ -169,15 +170,7 @@ class MainWindow(QWidget):
         if self.server_thread is not None and self.server_thread.isRunning():
             self.server_thread.stop()
 
-        self.fade_anim = QPropertyAnimation(self, b"windowOpacity")
-        self.fade_anim.setDuration(200)
-        self.fade_anim.setStartValue(1.0)
-        self.fade_anim.setEndValue(0.0)
-        self.fade_anim.setEasingCurve(QEasingCurve.Type.InCubic)
-
-        self.fade_anim.finished.connect(self.close)
-
-        self.fade_anim.start()
+        self.close_anim = AnimationsManager.animation_of_window_disappearing(self, 200)
 
 
     def open_settings_tab(self) -> None:
