@@ -1,14 +1,13 @@
 from pathlib import Path
-from wsgiref.simple_server import server_version
 
-from PyQt6.QtCore import QPoint, QTimer, pyqtSignal, Qt, QThread
+from PyQt6.QtCore import (QPoint, QTimer, pyqtSignal, Qt,
+    QThread, QPropertyAnimation, QEasingCurve)
 from PyQt6.QtWidgets import QWidget
 from PyQt6.QtGui import QCloseEvent
 from PyQt6.uic import loadUi
 
 from utils.output_rich import Rich
 from core.server import GameServer, LOGS_QUEUE
-from gui.utils.windows_animations import AnimateManager
 from gui.utils.fonts import Fonts
 from utils.create_shortcut import check_build
 
@@ -65,6 +64,9 @@ class MainWindow(QWidget):
 
         self.server_thread = None
 
+        # атрибут для хранения позиции мыши(x,y), объект класса qpoint
+        self.drag_position: QPoint = QPoint()
+
         Rich.enter_log("Показ главного окна.")
 
         ui_path = Path('src/gui/ui/main_window.ui').as_posix()
@@ -115,19 +117,67 @@ class MainWindow(QWidget):
 
         self.buttonCreateShortcut.clicked.connect(check_build)
 
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
 
-    def closeEvent(self, event: QCloseEvent) -> None:
+
+    def mousePressEvent(self, event) -> None:
         """
-        Обработка закрытия окна. Останавливаем сервер, если он запущен.
+        Обработчик события нажатия кнопки мыши.
+
+        :param event: Принимает event - объект события, содержащий информацию о нажатии
+        (какая кнопка, координаты и т.д.).
 
         :return: None
         """
 
-        Rich.exit_log("Выход из приложения")
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.drag_position = event.globalPosition().toPoint()
+            event.accept()
 
+
+    def mouseMoveEvent(self, event) -> None:
+        """
+        Обработчик события движения мыши.
+
+        :param event: Принимает event - объект события, содержащий информацию о нажатии
+        (какая кнопка, координаты и т.д.).
+
+        :return: None
+        """
+
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            delta = event.globalPosition().toPoint() - self.drag_position
+            self.move(self.pos() + delta)
+            self.drag_position = event.globalPosition().toPoint()
+            event.accept()
+
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        """
+        Обработка закрытия окна. Запуск анимации прозрачности.
+
+        :return: None
+        """
+
+        if getattr(self, "_is_closing", False):
+            return
+
+        self._is_closing = True
+        event.ignore()
+
+        Rich.exit_log("Выход из приложения")
         if self.server_thread is not None and self.server_thread.isRunning():
             self.server_thread.stop()
-        event.accept()
+
+        self.fade_anim = QPropertyAnimation(self, b"windowOpacity")
+        self.fade_anim.setDuration(200)
+        self.fade_anim.setStartValue(1.0)
+        self.fade_anim.setEndValue(0.0)
+        self.fade_anim.setEasingCurve(QEasingCurve.Type.InCubic)
+
+        self.fade_anim.finished.connect(self.close)
+
+        self.fade_anim.start()
 
 
     def open_settings_tab(self) -> None:
@@ -201,6 +251,7 @@ class MainWindow(QWidget):
         """
 
         self.textEditForLogs.append(message)
+
 
     def check_logs(self) -> None:
         """
