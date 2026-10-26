@@ -95,7 +95,7 @@
          <item>
           <widget class="QTabWidget" name="tab_widget">
            <property name="currentIndex">
-            <number>0</number>
+            <number>1</number>
            </property>
            <widget class="QWidget" name="tab">
             <attribute name="title">
@@ -261,6 +261,87 @@ QPushButton:disabled {
             <attribute name="title">
              <string>Настройки</string>
             </attribute>
+            <layout class="QVBoxLayout" name="verticalLayout_3">
+             <item>
+              <widget class="QWidget" name="widget_3" native="true">
+               <layout class="QHBoxLayout" name="horizontalLayout_4">
+                <item>
+                 <widget class="QLabel" name="labelShortcut">
+                  <property name="styleSheet">
+                   <string notr="true">QLabel {
+	color: white;
+	font-weight: bold;
+}</string>
+                  </property>
+                  <property name="text">
+                   <string>Ярлык:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="buttonCreateShortcut">
+                  <property name="minimumSize">
+                   <size>
+                    <width>0</width>
+                    <height>35</height>
+                   </size>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>150</width>
+                    <height>35</height>
+                   </size>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QPushButton {
+    background-color: #3574F0;
+    color: #FFFFFF;      
+    border: 1px solid #3574F0;
+    border-radius: 4px;    
+    padding: 4px 16px;        
+    font-size: 13px;
+    font-weight: 500;
+	border-radius: 10px;
+}
+
+QPushButton:hover {
+    background-color: #4682F5;
+    border: 1px solid #4682F5;
+}
+
+QPushButton:pressed {
+    background-color: #2B60CC;
+    border: 1px solid #2B60CC;
+}
+
+QPushButton:disabled {
+    background-color: #4C525E;
+    color: #8A909C;
+    border: 1px solid #4C525E;
+}</string>
+                  </property>
+                  <property name="text">
+                   <string>Создать ярлык</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <spacer name="verticalSpacer_2">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>20</width>
+                 <height>40</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
            </widget>
           </widget>
          </item>
