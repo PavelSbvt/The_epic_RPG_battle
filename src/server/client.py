@@ -2,6 +2,8 @@ import socket
 import threading
 import json
 
+from PyQt6.QtWidgets import QPushButton
+
 from utils.output_rich import Rich
 
 HOST = '127.0.0.1'
@@ -13,6 +15,8 @@ ACTIONS_MAP = {
     "2": "NORMAL_ATTACK",
     "3": "SPECIAL_ATTACK"
 }
+
+LOGS_QUEUE = []
 
 
 def receive_messages(sock: socket.socket) -> None:
@@ -39,22 +43,35 @@ def receive_messages(sock: socket.socket) -> None:
             text = msg.get("message", "")
 
             if msg_type == "system":
-                Rich.info_log(f"[СИСТЕМА]: {text}")
+                message = f"[СИСТЕМА]: {text}"
+                Rich.info_log(message)
+                LOGS_QUEUE.append(message)
             elif msg_type == "result":
-                Rich.success_log(f"[РЕЗУЛЬТАТ ХОДА]: {text}")
-                Rich.debug_log("\nВыберите действие (1 - Бафф, 2 - Обычная атака, 3 - Спец. атака):")
+                message_info = f"[РЕЗУЛЬТАТ ХОДА]: {text}"
+                Rich.success_log(message_info)
+                LOGS_QUEUE.append(message_info)
+
+                message_guide ="\nВыберите действие (1 - Бафф, 2 - Обычная атака, 3 - Спец. атака):"
+                Rich.debug_log(message_guide)
+                LOGS_QUEUE.append(message_guide)
             else:
-                Rich.debug_log(f"\n[СООБЩЕНИЕ]: {text}")
+                else_message = f"\n[СООБЩЕНИЕ]: {text}"
+                Rich.debug_log(else_message)
+                LOGS_QUEUE.append(else_message)
 
         except json.JSONDecodeError:
-            Rich.warning_log("Получены данные в неизвестном формате.")
+            warning_message = "Получены данные в неизвестном формате."
+            Rich.warning_log(warning_message)
+            LOGS_QUEUE.append(warning_message)
         except Exception:
             print("\n")
-            Rich.log_error("Возникла ошибка. Соединение с сервером потеряно")
+            except_info = "Возникла ошибка. Соединение с сервером потеряно"
+            Rich.log_error(except_info)
+            LOGS_QUEUE.append(except_info)
             break
 
 
-def main() -> None:
+def main(button: QPushButton) -> None:
     """
     Главная функция клиента.
 
@@ -65,15 +82,88 @@ def main() -> None:
 
     try:
         sock.connect((HOST, PORT))
-        Rich.success_log(f"Выполнено подключение к серверу: {HOST}:{PORT}")
+
+        success_info_connect = f"Выполнено подключение к серверу: {HOST}:{PORT}"
+
+        button.setText("Подключение выполнено")
+
+        button.setStyleSheet("""
+        QPushButton {
+            background-color: #E5484D;
+            color: #FFFFFF;           
+            border: 1px solid #E5484D;
+            border-radius: 10px;       
+            padding: 4px 16px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        QPushButton:hover {
+            background-color: #ED5F63;
+            border: 1px solid #ED5F63;
+        }
+        
+        QPushButton:pressed {
+            background-color: #C93B40; 
+            border: 1px solid #C93B40;
+        }
+        
+        QPushButton:disabled {
+            background-color: #4C525E; 
+            color: #8A909C;
+            border: 1px solid #4C525E;
+        }
+        """)
+
+        Rich.success_log(success_info_connect)
+        LOGS_QUEUE.append(success_info_connect)
+
     except ConnectionRefusedError:
-        Rich.log_error("Не удалось подключиться. Сервер запущен?")
+        connecting_error_info = "Не удалось подключиться. Сервер запущен?"
+
+        button.setText("Попробовать переподключиться")
+
+        button.setFixedWidth(300)
+
+        button.setStyleSheet("""
+                    QPushButton {
+                    background-color: #3574F0;
+                    color: #FFFFFF;      
+                    border: 1px solid #3574F0;
+                    border-radius: 4px;    
+                    padding: 4px 16px;        
+                    font-size: 13px;
+                    font-weight: 500;
+                    border-radius: 10px;
+                    }
+                    
+                    QPushButton:hover {
+                    background-color: #4682F5;
+                    border: 1px solid #4682F5;
+                    }
+                    
+                    QPushButton:pressed {
+                    background-color: #2B60CC;
+                    border: 1px solid #2B60CC;
+                    }
+                    
+                    QPushButton:disabled {
+                    background-color: #4C525E;
+                    color: #8A909C;
+                    border: 1px solid #4C525E;
+                }
+                """)
+
+        Rich.log_error(connecting_error_info)
+        LOGS_QUEUE.append(connecting_error_info)
+
         return
 
     # Запускаем поток для чтения сообщений
     threading.Thread(target=receive_messages, args=(sock,), daemon=True).start()
 
     Rich.debug_log("\nОжидание второго игрока...")
+    LOGS_QUEUE.append("\nОжидание второго игрока...")
 
     while True:
         # Запрашиваем у пользователя действие
@@ -99,3 +189,4 @@ def main() -> None:
 
     sock.close()
     Rich.simple_log("Клиент завершил работу.")
+    LOGS_QUEUE.append("Клиент завершил работу.")
