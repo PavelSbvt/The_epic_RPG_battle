@@ -1,17 +1,18 @@
+import sys
 from pathlib import Path
 
 from PyQt6.QtCore import QPoint, QTimer, pyqtSignal, Qt
-from PyQt6.QtWidgets import QWidget
-from PyQt6.QtGui import QCloseEvent
+from PyQt6.QtWidgets import QWidget, QApplication
+from PyQt6.QtGui import QCloseEvent, QColor
 from PyQt6.uic import loadUi
 
 from utils.output_rich import Rich
 from gui.utils.windows_animations import AnimationsManager
-from gui.utils.windows_functions import (center_window,
-    background_window_by_time_of_day)
 from server.client import Client, CLIENT_LOGS_QUEUE
-from gui.utils.update_gui import (update_progress_bar_animation,
-    loading_window_img_click, update_animation_gradient)
+from core.interface import (
+    MainWindow, QPalette,
+    ACCENT, TEXT, PANEL_BG,
+    CARD_BG, DARK_BG)
 from gui.utils.fonts import Fonts
 
 
@@ -42,6 +43,8 @@ class ClientWindow(QWidget):
 
         self.buttonLinkWithServer.setFont(Fonts.get_qfont("JetBrains_Regular", 12))
         self.buttonLinkWithServer.clicked.connect(lambda: Client.connect(self.buttonLinkWithServer))
+
+        self.buttonRunGame.clicked.connect(self.open_main_game_window)
 
         self.log_timer = QTimer(self)
         self.log_timer.timeout.connect(self.check_logs)
@@ -105,6 +108,18 @@ class ClientWindow(QWidget):
         Rich.debug_log("Запуск анимации исчезновения окна")
 
         self.close_anim = AnimationsManager.animation_of_window_disappearing(self, 265)
+
+    def open_main_game_window(self) -> None:
+        """
+        Функция открытия основного окна игры
+        :return: None
+        """
+
+        self.game_window = MainWindow()
+
+        self.game_window.show()
+
+        # self.hide()
 
     def add_log(self, message: str) -> None:
         """
