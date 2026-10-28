@@ -22,6 +22,7 @@ def center_window(self) -> None:
     qr.moveCenter(cp)
     self.move(qr.topLeft())
 
+
 def get_main_color_image(image_path: str) -> tuple[int, int, int]:
     """
     Функция нужна для определения главного цвета изображения на фоне виджета.
@@ -75,6 +76,7 @@ def get_main_color_image(image_path: str) -> tuple[int, int, int]:
         Rich.log_error(f"Ошибка: {e}")
         return (220, 220, 220)
 
+
 def get_random_image_from_folder(folder_path: str) -> str:
     """
     Возвращает путь к случайному изображению из указанной папки
@@ -99,6 +101,7 @@ def get_random_image_from_folder(folder_path: str) -> str:
     random_image = random.choice(images)
 
     return str(random_image)
+
 
 def background_window_by_time_of_day(target_label: QLabel,
         target_widget: QWidget, check_bg_path: str) -> tuple[int,int,int, str]:
