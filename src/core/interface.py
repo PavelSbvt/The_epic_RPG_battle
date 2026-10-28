@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QPalette
 
-from base import Warrior, Mage, Assassin, Battle, Actions, Character
+from core.base import Warrior, Mage, Assassin, Battle, Actions, Character
 
 
 DARK_BG = "#0d1117"
