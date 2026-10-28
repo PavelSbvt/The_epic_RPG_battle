@@ -66,6 +66,53 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QPushButton" name="buttonRunGame">
+           <property name="minimumSize">
+            <size>
+             <width>100</width>
+             <height>35</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>100</width>
+             <height>35</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QPushButton {
+    background-color: #3574F0;
+    color: #FFFFFF;      
+    border: 1px solid #3574F0;
+    border-radius: 4px;    
+    padding: 4px 16px;        
+    font-size: 13px;
+    font-weight: 500;
+	border-radius: 10px;
+}
+
+QPushButton:hover {
+    background-color: #4682F5;
+    border: 1px solid #4682F5;
+}
+
+QPushButton:pressed {
+    background-color: #2B60CC;
+    border: 1px solid #2B60CC;
+}
+
+QPushButton:disabled {
+    background-color: #4C525E;
+    color: #8A909C;
+    border: 1px solid #4C525E;
+}</string>
+           </property>
+           <property name="text">
+            <string>Войти</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
       </item>
