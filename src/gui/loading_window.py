@@ -213,7 +213,7 @@ class MyLoadingWindow(QWidget):
             self.timer_animation.stop()
             self.progress_bar.setValue(100)
 
-        AnimationsManager.animation_disappearance_and_closing(self, duration=1000)
+        AnimationsManager.animation_disappearance_and_closing(self, duration=500)
 
 
     def mousePressEvent(self, event) -> None:
