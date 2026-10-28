@@ -3,190 +3,153 @@ import threading
 import json
 
 from PyQt6.QtWidgets import QPushButton
-
 from utils.output_rich import Rich
 
 HOST = '127.0.0.1'
 PORT = 5555
 
-# Словарь для удобного ввода действий
-ACTIONS_MAP = {
-    "1": "BUFF",
-    "2": "NORMAL_ATTACK",
-    "3": "SPECIAL_ATTACK"
-}
-
-LOGS_QUEUE = []
+# Очередь для логов (чтобы UI мог их забирать)
+CLIENT_LOGS_QUEUE = []
 
 
-def receive_messages(sock: socket.socket) -> None:
+class GameClient:
     """
-    Функция для получения сообщений от сервера в отдельном потоке.
-
-    :param sock: Сокет клиента
-
-    :return: None
+    Класс клиента для подключения к игровому серверу и отправки действий.
     """
 
-    while True:
+    def __init__(self) -> None:
+        self.sock: socket.socket | None = None
+        self.is_connected: bool = False
+
+    def connect(self, button: QPushButton) -> None:
+        """
+        Подключение к серверу.
+
+        :param button: Кнопка подключения (для изменения её стиля и текста)
+
+        :return: None
+        """
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
         try:
-            data = sock.recv(1024)
-            if not data:
-                Rich.warning_log("Сервер закрыл соединение.")
+            self.sock.connect((HOST, PORT))
+            self.is_connected = True
+
+            # Меняем кнопку на "успешно"
+            button.setText("Подключение выполнено")
+            button.setEnabled(False)
+            button.setStyleSheet("""
+                QPushButton { 
+                    background-color: #E5484D; 
+                    color: #FFFFFF; 
+                    border: 1px solid #E5484D; 
+                    border-radius: 10px; 
+                    padding: 4px 16px; 
+                    font-size: 13px; 
+                    font-weight: 500; 
+                }
+                QPushButton:disabled { 
+                    background-color: #4C525E; 
+                    color: #8A909C; 
+                    border: 1px solid #4C525E; 
+                }
+            """)
+
+            info = f"Выполнено подключение к серверу: {HOST}:{PORT}"
+            Rich.success_log(info)
+            CLIENT_LOGS_QUEUE.append(info)
+
+            # Запускаем фоновое чтение сообщений
+            threading.Thread(target=self._receive_messages, daemon=True).start()
+
+        except ConnectionRefusedError:
+            info = "Не удалось подключиться. Сервер запущен?"
+            button.setText("Попробовать переподключиться")
+            button.setFixedWidth(300)
+            Rich.log_error(info)
+            CLIENT_LOGS_QUEUE.append(info)
+
+    def _receive_messages(self) -> None:
+        """
+        Читает сообщения от сервера в фоновом потоке.
+        """
+        while self.is_connected and self.sock:
+            try:
+                data = self.sock.recv(1024)
+                if not data:
+                    break
+
+                msg = json.loads(data.decode('utf-8'))
+                msg_type = msg.get("type")
+                text = msg.get("message", "")
+
+                if msg_type == "system":
+                    CLIENT_LOGS_QUEUE.append(f"[СИСТЕМА]: {text}")
+                elif msg_type == "result":
+                    CLIENT_LOGS_QUEUE.append(f"[РЕЗУЛЬТАТ ХОДА]: {text}")
+                    CLIENT_LOGS_QUEUE.append("Выберите действие:")
+                else:
+                    CLIENT_LOGS_QUEUE.append(f"[СООБЩЕНИЕ]: {text}")
+
+            except Exception as e:
+                CLIENT_LOGS_QUEUE.append(f"Ошибка соединения: {e}")
+                self.is_connected = False
                 break
 
-            # Декодируем JSON-строку от сервера
-            msg = json.loads(data.decode('utf-8'))
+    def _send_action(self, action_name: str) -> None:
+        """
+        Внутренний метод для отправки действия на сервер.
+        (Защищен от прямого вызова извне, хотя в Python это не строго).
 
-            # Проверяем тип сообщения
-            msg_type = msg.get("type")
-            text = msg.get("message", "")
+        :param action_name: Название действия
 
-            if msg_type == "system":
-                message = f"[СИСТЕМА]: {text}"
-                Rich.info_log(message)
-                LOGS_QUEUE.append(message)
-            elif msg_type == "result":
-                message_info = f"[РЕЗУЛЬТАТ ХОДА]: {text}"
-                Rich.success_log(message_info)
-                LOGS_QUEUE.append(message_info)
+        :return: None
+        """
+        if not self.is_connected or not self.sock:
+            CLIENT_LOGS_QUEUE.append("Нет подключения к серверу!")
+            return
 
-                message_guide ="\nВыберите действие (1 - Бафф, 2 - Обычная атака, 3 - Спец. атака):"
-                Rich.debug_log(message_guide)
-                LOGS_QUEUE.append(message_guide)
-            else:
-                else_message = f"\n[СООБЩЕНИЕ]: {text}"
-                Rich.debug_log(else_message)
-                LOGS_QUEUE.append(else_message)
-
-        except json.JSONDecodeError:
-            warning_message = "Получены данные в неизвестном формате."
-            Rich.warning_log(warning_message)
-            LOGS_QUEUE.append(warning_message)
-        except Exception:
-            print("\n")
-            except_info = "Возникла ошибка. Соединение с сервером потеряно"
-            Rich.log_error(except_info)
-            LOGS_QUEUE.append(except_info)
-            break
-
-
-def main(button: QPushButton) -> None:
-    """
-    Главная функция клиента.
-
-    :return: None
-    """
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    try:
-        sock.connect((HOST, PORT))
-
-        success_info_connect = f"Выполнено подключение к серверу: {HOST}:{PORT}"
-
-        button.setText("Подключение выполнено")
-
-        button.setStyleSheet("""
-        QPushButton {
-            background-color: #E5484D;
-            color: #FFFFFF;           
-            border: 1px solid #E5484D;
-            border-radius: 10px;       
-            padding: 4px 16px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-        
-        QPushButton:hover {
-            background-color: #ED5F63;
-            border: 1px solid #ED5F63;
-        }
-        
-        QPushButton:pressed {
-            background-color: #C93B40; 
-            border: 1px solid #C93B40;
-        }
-        
-        QPushButton:disabled {
-            background-color: #4C525E; 
-            color: #8A909C;
-            border: 1px solid #4C525E;
-        }
-        """)
-
-        Rich.success_log(success_info_connect)
-        LOGS_QUEUE.append(success_info_connect)
-
-    except ConnectionRefusedError:
-        connecting_error_info = "Не удалось подключиться. Сервер запущен?"
-
-        button.setText("Попробовать переподключиться")
-
-        button.setFixedWidth(300)
-
-        button.setStyleSheet("""
-                    QPushButton {
-                    background-color: #3574F0;
-                    color: #FFFFFF;      
-                    border: 1px solid #3574F0;
-                    border-radius: 4px;    
-                    padding: 4px 16px;        
-                    font-size: 13px;
-                    font-weight: 500;
-                    border-radius: 10px;
-                    }
-                    
-                    QPushButton:hover {
-                    background-color: #4682F5;
-                    border: 1px solid #4682F5;
-                    }
-                    
-                    QPushButton:pressed {
-                    background-color: #2B60CC;
-                    border: 1px solid #2B60CC;
-                    }
-                    
-                    QPushButton:disabled {
-                    background-color: #4C525E;
-                    color: #8A909C;
-                    border: 1px solid #4C525E;
-                }
-                """)
-
-        Rich.log_error(connecting_error_info)
-        LOGS_QUEUE.append(connecting_error_info)
-
-        return
-
-    # Запускаем поток для чтения сообщений
-    threading.Thread(target=receive_messages, args=(sock,), daemon=True).start()
-
-    Rich.debug_log("\nОжидание второго игрока...")
-    LOGS_QUEUE.append("\nОжидание второго игрока...")
-
-    while True:
-        # Запрашиваем у пользователя действие
-        choice = Rich.input_data("Выберите действие (1 - Бафф, 2 - Обычная атака, 3 - Спец. атака, exit - выход)")
-
-        if choice.lower() == 'exit':
-            break
-
-        if choice not in ACTIONS_MAP:
-            Rich.warning_log("Неверный ввод. Введите 1, 2, 3 или exit.")
-            continue
-
-        # Формируем JSON для отправки на сервер
-        action_name = ACTIONS_MAP[choice]
         msg = {
             "type": "action",
             "value": action_name
         }
+        try:
+            self.sock.sendall(json.dumps(msg).encode('utf-8'))
+            CLIENT_LOGS_QUEUE.append(f"Вы отправили: {action_name}")
+        except Exception as e:
+            CLIENT_LOGS_QUEUE.append(f"Ошибка отправки: {e}")
 
-        # Отправляем
-        sock.sendall(json.dumps(msg).encode('utf-8'))
-        Rich.debug_log(f"Вы отправили действие: {action_name}")
+    def send_buff(self) -> None:
+        """
+        Отправляет действие "Бафф".
+        """
+        self._send_action("BUFF")
 
-    sock.close()
-    Rich.simple_log("Клиент завершил работу.")
-    LOGS_QUEUE.append("Клиент завершил работу.")
+    def send_normal_attack(self) -> None:
+        """
+        Отправляет действие "Обычная атака".
+        """
+        self._send_action("NORMAL_ATTACK")
+
+    def send_special_attack(self) -> None:
+        """
+        Отправляет действие "Специальная атака".
+        """
+        self._send_action("SPECIAL_ATTACK")
+
+    def disconnect(self) -> None:
+        """
+        Отключает клиента от сервера и закрывает сокет.
+        """
+        self.is_connected = False
+        if self.sock:
+            try:
+                self.sock.close()
+            except Exception:
+                pass
+            self.sock = None
+        CLIENT_LOGS_QUEUE.append("Вы отключились от сервера.")
+
+
+# Создаем глобальный экземпляр клиента
+Client = GameClient()
