@@ -8,8 +8,13 @@ from utils.output_rich import Rich
 HOST = '127.0.0.1'
 PORT = 5555
 
-# Очередь для логов (чтобы UI мог их забирать)
 CLIENT_LOGS_QUEUE = []
+
+GAME_STATE = {
+    "p1": {"name": "?", "hp": 0, "max_hp": 1},
+    "p2": {"name": "?", "hp": 0, "max_hp": 1},
+    "is_over": False
+}
 
 
 class GameClient:
@@ -29,6 +34,9 @@ class GameClient:
 
         :return: None
         """
+        if self.is_connected:
+            return
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         try:
@@ -73,10 +81,13 @@ class GameClient:
         """
         Читает сообщения от сервера в фоновом потоке.
         """
+        global GAME_STATE
+
         while self.is_connected and self.sock:
             try:
                 data = self.sock.recv(1024)
                 if not data:
+                    CLIENT_LOGS_QUEUE.append("Сервер закрыл соединение.")
                     break
 
                 msg = json.loads(data.decode('utf-8'))
@@ -85,12 +96,18 @@ class GameClient:
 
                 if msg_type == "system":
                     CLIENT_LOGS_QUEUE.append(f"[СИСТЕМА]: {text}")
-                elif msg_type == "result":
-                    CLIENT_LOGS_QUEUE.append(f"[РЕЗУЛЬТАТ ХОДА]: {text}")
-                    CLIENT_LOGS_QUEUE.append("Выберите действие:")
-                else:
-                    CLIENT_LOGS_QUEUE.append(f"[СООБЩЕНИЕ]: {text}")
 
+                elif msg_type == "result":
+                    # Обновляем глобальное состояние игры
+                    GAME_STATE = {
+                        "p1": msg.get("p1", {}),
+                        "p2": msg.get("p2", {}),
+                        "is_over": msg.get("is_over", False)
+                    }
+                    CLIENT_LOGS_QUEUE.append(f"[РЕЗУЛЬТАТ ХОДА]: {text}")
+
+            except json.JSONDecodeError:
+                CLIENT_LOGS_QUEUE.append("Ошибка: получены данные в неизвестном формате.")
             except Exception as e:
                 CLIENT_LOGS_QUEUE.append(f"Ошибка соединения: {e}")
                 self.is_connected = False
@@ -99,9 +116,8 @@ class GameClient:
     def _send_action(self, action_name: str) -> None:
         """
         Внутренний метод для отправки действия на сервер.
-        (Защищен от прямого вызова извне, хотя в Python это не строго).
 
-        :param action_name: Название действия
+        :param action_name: Название действия (BUFF, NORMAL_ATTACK, SPECIAL_ATTACK)
 
         :return: None
         """
@@ -151,5 +167,4 @@ class GameClient:
         CLIENT_LOGS_QUEUE.append("Вы отключились от сервера.")
 
 
-# Создаем глобальный экземпляр клиента
 Client = GameClient()
