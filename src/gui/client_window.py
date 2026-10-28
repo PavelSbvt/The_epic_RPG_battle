@@ -1,0 +1,97 @@
+from pathlib import Path
+
+from PyQt6.QtCore import QPoint, QTimer, pyqtSignal, Qt
+from PyQt6.QtWidgets import QWidget
+from PyQt6.QtGui import QCloseEvent
+from PyQt6.uic import loadUi
+
+from utils.output_rich import Rich
+from gui.utils.windows_animations import AnimationsManager
+from gui.utils.windows_functions import (center_window,
+    background_window_by_time_of_day)
+
+from gui.utils.update_gui import (update_progress_bar_animation,
+    loading_window_img_click, update_animation_gradient)
+from gui.utils.fonts import Fonts
+
+
+class ClientWindow(QWidget):
+    """
+    Класс окна клиента
+    """
+
+    closed = pyqtSignal()
+
+    def __init__(self) -> None:
+        """
+        Конструктор класса
+        """
+        super().__init__()
+
+        self.setObjectName("client_window")
+
+        self.close_window_animation = None
+
+        Rich.enter_log("Показ окна клиента.")
+
+        ui_path = Path('src/gui/ui/client_window.ui').as_posix()
+        loadUi(ui_path, self)
+
+        self.drag_position: QPoint = QPoint()
+
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+    def mousePressEvent(self, event) -> None:
+        """
+        Обработчик события нажатия кнопки мыши.
+
+        :param event: Принимает event - объект события, содержащий информацию о нажатии
+        (какая кнопка, координаты и т.д.).
+
+        :return: None
+        """
+
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.drag_position = event.globalPosition().toPoint()
+            event.accept()
+
+    def mouseMoveEvent(self, event) -> None:
+        """
+        Обработчик события движения мыши.
+
+        :param event: Принимает event - объект события, содержащий информацию о нажатии
+        (какая кнопка, координаты и т.д.).
+
+        :return: None
+        """
+
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            delta = event.globalPosition().toPoint() - self.drag_position
+            self.move(self.pos() + delta)
+            self.drag_position = event.globalPosition().toPoint()
+            event.accept()
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        """
+        Функция, вызывающаяся при закрытии окна.
+
+        :param event: событие закрытия окна
+
+        :return: None
+        """
+
+        if getattr(self, "_is_closing", False):
+            event.accept()
+            return
+
+        Rich.exit_log("Выход из приложения - закрытие главного окна")
+
+        self._is_closing = True
+
+        event.ignore()
+
+        Rich.debug_log("Запуск анимации исчезновения окна")
+
+        self.close_anim = AnimationsManager.animation_of_window_disappearing(self, 265)
+
+
