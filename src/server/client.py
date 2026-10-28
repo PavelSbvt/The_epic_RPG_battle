@@ -5,7 +5,6 @@ import json
 from PyQt6.QtWidgets import QPushButton
 from utils.output_rich import Rich
 
-HOST = '127.0.0.1'
 PORT = 5555
 
 CLIENT_LOGS_QUEUE = []
@@ -26,11 +25,12 @@ class GameClient:
         self.sock: socket.socket | None = None
         self.is_connected: bool = False
 
-    def connect(self, button: QPushButton) -> None:
+    def connect(self, button: QPushButton, ip_address: str = '127.0.0.1') -> None:
         """
         Подключение к серверу.
 
         :param button: Кнопка подключения (для изменения её стиля и текста)
+        :param ip_address: IP-адрес сервера (по умолчанию '127.0.0.1' для локального теста)
 
         :return: None
         """
@@ -40,7 +40,8 @@ class GameClient:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         try:
-            self.sock.connect((HOST, PORT))
+            # Подключаемся по переданному IP
+            self.sock.connect((ip_address, PORT))
             self.is_connected = True
 
             # Меняем кнопку на "успешно"
@@ -63,7 +64,7 @@ class GameClient:
                 }
             """)
 
-            info = f"Выполнено подключение к серверу: {HOST}:{PORT}"
+            info = f"Выполнено подключение к серверу: {ip_address}:{PORT}"
             Rich.success_log(info)
             CLIENT_LOGS_QUEUE.append(info)
 
@@ -71,9 +72,15 @@ class GameClient:
             threading.Thread(target=self._receive_messages, daemon=True).start()
 
         except ConnectionRefusedError:
-            info = "Не удалось подключиться. Сервер запущен?"
+            info = f"Сервер по адресу {ip_address}:{PORT} не отвечает. Сервер запущен?"
             button.setText("Попробовать переподключиться")
             button.setFixedWidth(300)
+            Rich.log_error(info)
+            CLIENT_LOGS_QUEUE.append(info)
+
+        except socket.gaierror:
+            info = f"Неверный IP-адрес: {ip_address}"
+            button.setText("Попробовать переподключиться")
             Rich.log_error(info)
             CLIENT_LOGS_QUEUE.append(info)
 

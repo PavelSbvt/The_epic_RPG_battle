@@ -41,8 +41,12 @@ class ClientWindow(QWidget):
         self.labelTitleClient.setFont(Fonts.get_qfont("JetBrains_Regular", 12))
         self.textEditForLogs.setFont(Fonts.get_qfont("JetBrains_Regular", 8))
 
+        self.inputIP.setFont(Fonts.get_qfont("JetBrains_Regular", 10))
+
+        self.inputIP.setPlaceholderText("Введите IP сервера (например, 192.168.1.5)")
+
         self.buttonLinkWithServer.setFont(Fonts.get_qfont("JetBrains_Regular", 12))
-        self.buttonLinkWithServer.clicked.connect(lambda: Client.connect(self.buttonLinkWithServer))
+        self.buttonLinkWithServer.clicked.connect(self.try_connect)
 
         self.buttonRunGame.clicked.connect(self.open_main_game_window)
 
@@ -108,6 +112,22 @@ class ClientWindow(QWidget):
         Rich.debug_log("Запуск анимации исчезновения окна")
 
         self.close_anim = AnimationsManager.animation_of_window_disappearing(self, 265)
+
+    def try_connect(self) -> None:
+        """
+        Функция для попытки подключения к серверу по IP-адресу из поля ввода.
+        """
+        # Берем IP из поля ввода.
+        # Если поле пустое, используем 127.0.0.1 для теста на одном компьютере.
+        if hasattr(self, 'inputIP'):
+            ip = self.inputIP.text().strip()
+        else:
+            ip = "127.0.0.1"  # Если поля нет, подключаемся локально
+
+        if not ip:
+            ip = "127.0.0.1"
+
+        Client.connect(self.buttonLinkWithServer, ip_address=ip)
 
     def open_main_game_window(self) -> None:
         """

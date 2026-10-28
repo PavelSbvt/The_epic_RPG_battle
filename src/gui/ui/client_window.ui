@@ -67,6 +67,9 @@
           </widget>
          </item>
          <item>
+          <widget class="QLineEdit" name="inputIP"/>
+         </item>
+         <item>
           <widget class="QPushButton" name="buttonRunGame">
            <property name="minimumSize">
             <size>
