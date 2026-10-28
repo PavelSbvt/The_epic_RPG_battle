@@ -6,7 +6,8 @@ from PyQt6.QtGui import QIcon
 
 from core.settings_manager import Settings
 from gui.loading_window import MyLoadingWindow
-# from gui.utils.windows_animations import AnimateManager
+from gui.client_window import ClientWindow
+from gui.utils.windows_animations import AnimationsManager
 from utils.output_rich import Rich
 
 
@@ -23,9 +24,12 @@ def start_with_loading_window() -> None:
 
     LoadingWindow = MyLoadingWindow()
 
+    LoadingWindow.setWindowOpacity(0.0)
     LoadingWindow.show()
+    LoadingWindow.fade_in_anim = AnimationsManager.window_appearance_animation(
+        LoadingWindow, 320)
 
-    # MainWin = MainWindow()
+    ClientWin = ClientWindow()
 
     Rich.print_spacer()
 
@@ -41,9 +45,14 @@ def start_with_loading_window() -> None:
         Rich.print_spacer()
         LoadingWindow.hide()
         Rich.exit_log("Загрузочное окно скрыто")
-        # MainWin.show()
-        # Rich.enter_log("Показ главного окна")
-        # AnimateManager.animation_appearance_window(MainWin, duration=1000)
+
+        ClientWin.setWindowTitle("Client")
+
+        ClientWin.setWindowOpacity(0.0)
+        ClientWin.show()
+        ClientWin.fade_in_anim = AnimationsManager.window_appearance_animation(
+            ClientWin, 320)
+
 
     LoadingWindow.closed.connect(on_loading_closed)
 
@@ -56,11 +65,14 @@ def start_without_loading_window() -> None:
     """
 
     Rich.debug_log("Запуск приложения без загрузочного окна")
-    # MainWin = MainWindow()
-    #
-    # Rich.enter_log("Показ главного окна")
-    # MainWin.show()
-    # AnimateManager.animation_appearance_window(MainWin, duration=1000)
+
+    ClientWin = ClientWindow()
+    ClientWin.setWindowTitle("Client")
+
+    ClientWin.setWindowOpacity(0.0)
+    ClientWin.show()
+    ClientWin.fade_in_anim = AnimationsManager.window_appearance_animation(
+        ClientWin, 320)
 
 
 if __name__ == "__main__":
