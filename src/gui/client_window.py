@@ -9,7 +9,7 @@ from utils.output_rich import Rich
 from gui.utils.windows_animations import AnimationsManager
 from gui.utils.windows_functions import (center_window,
     background_window_by_time_of_day)
-
+from server.client import main, LOGS_QUEUE
 from gui.utils.update_gui import (update_progress_bar_animation,
     loading_window_img_click, update_animation_gradient)
 from gui.utils.fonts import Fonts
@@ -36,6 +36,16 @@ class ClientWindow(QWidget):
 
         ui_path = Path('src/gui/ui/client_window.ui').as_posix()
         loadUi(ui_path, self)
+
+        self.labelTitleClient.setFont(Fonts.get_qfont("JetBrains_Regular", 12))
+        self.textEditForLogs.setFont(Fonts.get_qfont("JetBrains_Regular", 8))
+
+        self.buttonLinkWithServer.setFont(Fonts.get_qfont("JetBrains_Regular", 12))
+        self.buttonLinkWithServer.clicked.connect(lambda: main(self.buttonLinkWithServer))
+
+        self.log_timer = QTimer(self)
+        self.log_timer.timeout.connect(self.check_logs)
+        self.log_timer.start(100)
 
         self.drag_position: QPoint = QPoint()
 
@@ -94,4 +104,25 @@ class ClientWindow(QWidget):
 
         self.close_anim = AnimationsManager.animation_of_window_disappearing(self, 265)
 
+    def add_log(self, message: str) -> None:
+        """
+        Функция для добавления логов для пользователя в TextEdit в окне сервера.
+        Принимает текст лога и добавляет этот его в TextEdit
 
+        :param message: str - принимает сообщение лога
+
+        :return: None.
+        """
+
+        self.textEditForLogs.append(message)
+
+    def check_logs(self) -> None:
+        """
+        Забирает сообщения из очереди и пишет их в TextEdit
+
+        :return: None.
+        """
+
+        while LOGS_QUEUE:
+            message = LOGS_QUEUE.pop(0)
+            self.add_log(message)
