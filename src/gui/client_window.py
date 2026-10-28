@@ -9,7 +9,7 @@ from utils.output_rich import Rich
 from gui.utils.windows_animations import AnimationsManager
 from gui.utils.windows_functions import (center_window,
     background_window_by_time_of_day)
-from server.client import main, LOGS_QUEUE
+from server.client import Client, CLIENT_LOGS_QUEUE
 from gui.utils.update_gui import (update_progress_bar_animation,
     loading_window_img_click, update_animation_gradient)
 from gui.utils.fonts import Fonts
@@ -41,7 +41,7 @@ class ClientWindow(QWidget):
         self.textEditForLogs.setFont(Fonts.get_qfont("JetBrains_Regular", 8))
 
         self.buttonLinkWithServer.setFont(Fonts.get_qfont("JetBrains_Regular", 12))
-        self.buttonLinkWithServer.clicked.connect(lambda: main(self.buttonLinkWithServer))
+        self.buttonLinkWithServer.clicked.connect(lambda: Client.connect(self.buttonLinkWithServer))
 
         self.log_timer = QTimer(self)
         self.log_timer.timeout.connect(self.check_logs)
@@ -94,6 +94,8 @@ class ClientWindow(QWidget):
             event.accept()
             return
 
+        Client.disconnect()
+
         Rich.exit_log("Выход из приложения - закрытие главного окна")
 
         self._is_closing = True
@@ -123,6 +125,6 @@ class ClientWindow(QWidget):
         :return: None.
         """
 
-        while LOGS_QUEUE:
-            message = LOGS_QUEUE.pop(0)
+        while CLIENT_LOGS_QUEUE:
+            message = CLIENT_LOGS_QUEUE.pop(0)
             self.add_log(message)
