@@ -12,7 +12,8 @@ CLIENT_LOGS_QUEUE = []
 GAME_STATE = {
     "p1": {"name": "?", "hp": 0, "max_hp": 1},
     "p2": {"name": "?", "hp": 0, "max_hp": 1},
-    "is_over": False
+    "is_over": False,
+    "my_player": None,
 }
 
 
@@ -40,11 +41,9 @@ class GameClient:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         try:
-            # Подключаемся по переданному IP
             self.sock.connect((ip_address, PORT))
             self.is_connected = True
 
-            # Меняем кнопку на "успешно"
             button.setText("Подключение выполнено")
             button.setEnabled(False)
             button.setStyleSheet("""
@@ -88,30 +87,38 @@ class GameClient:
         """
         Читает сообщения от сервера в фоновом потоке.
         """
-        global GAME_STATE
-
         while self.is_connected and self.sock:
             try:
                 data = self.sock.recv(1024)
                 if not data:
                     CLIENT_LOGS_QUEUE.append("Сервер закрыл соединение.")
+                    self.is_connected = False
                     break
 
                 msg = json.loads(data.decode('utf-8'))
                 msg_type = msg.get("type")
                 text = msg.get("message", "")
 
+                if msg_type == "you_are":
+                    GAME_STATE["my_player"] = msg.get("player")
+                    CLIENT_LOGS_QUEUE.append(f"Вы — Игрок {msg.get('player')}")
+                    continue
+
                 if msg_type == "system":
                     CLIENT_LOGS_QUEUE.append(f"[СИСТЕМА]: {text}")
+                    continue
 
-                elif msg_type == "result":
-                    # Обновляем глобальное состояние игры
-                    GAME_STATE = {
-                        "p1": msg.get("p1", {}),
-                        "p2": msg.get("p2", {}),
-                        "is_over": msg.get("is_over", False)
-                    }
+                if msg_type == "error":
+                    CLIENT_LOGS_QUEUE.append(f"[ОШИБКА]: {text}")
+                    continue
+
+                if msg_type == "result":
+                    # ВАЖНО: мутируем, а не пересоздаём, чтобы my_player не потерялся
+                    GAME_STATE["p1"] = msg.get("p1", {"name": "?", "hp": 0, "max_hp": 1})
+                    GAME_STATE["p2"] = msg.get("p2", {"name": "?", "hp": 0, "max_hp": 1})
+                    GAME_STATE["is_over"] = msg.get("is_over", False)
                     CLIENT_LOGS_QUEUE.append(f"[РЕЗУЛЬТАТ ХОДА]: {text}")
+                    continue
 
             except json.JSONDecodeError:
                 CLIENT_LOGS_QUEUE.append("Ошибка: получены данные в неизвестном формате.")
@@ -125,7 +132,6 @@ class GameClient:
         Внутренний метод для отправки действия на сервер.
 
         :param action_name: Название действия (BUFF, NORMAL_ATTACK, SPECIAL_ATTACK)
-
         :return: None
         """
         if not self.is_connected or not self.sock:
@@ -143,27 +149,38 @@ class GameClient:
             CLIENT_LOGS_QUEUE.append(f"Ошибка отправки: {e}")
 
     def send_buff(self) -> None:
-        """
-        Отправляет действие "Бафф".
-        """
+        """Отправляет действие "Бафф"."""
         self._send_action("BUFF")
 
     def send_normal_attack(self) -> None:
-        """
-        Отправляет действие "Обычная атака".
-        """
+        """Отправляет действие "Обычная атака"."""
         self._send_action("NORMAL_ATTACK")
 
     def send_special_attack(self) -> None:
-        """
-        Отправляет действие "Специальная атака".
-        """
+        """Отправляет действие "Специальная атака"."""
         self._send_action("SPECIAL_ATTACK")
 
+    def send_class_choice(self, class_name: str) -> None:
+        """
+        Отправляет серверу выбор класса персонажа.
+
+        :param class_name: "Warrior" | "Mage" | "Assassin"
+        :return: None
+        """
+        if not self.is_connected or not self.sock:
+            CLIENT_LOGS_QUEUE.append("Нет подключения — выбор класса не отправлен")
+            return
+        try:
+            self.sock.sendall(json.dumps({
+                "type": "choose_class",
+                "value": class_name,
+            }).encode("utf-8"))
+            CLIENT_LOGS_QUEUE.append(f"Выбран класс: {class_name}")
+        except Exception as e:
+            CLIENT_LOGS_QUEUE.append(f"Ошибка отправки класса: {e}")
+
     def disconnect(self) -> None:
-        """
-        Отключает клиента от сервера и закрывает сокет.
-        """
+        """Отключает клиента от сервера и закрывает сокет."""
         self.is_connected = False
         if self.sock:
             try:
@@ -171,6 +188,13 @@ class GameClient:
             except Exception:
                 pass
             self.sock = None
+
+        # Сбрасываем состояние игры
+        GAME_STATE["p1"] = {"name": "?", "hp": 0, "max_hp": 1}
+        GAME_STATE["p2"] = {"name": "?", "hp": 0, "max_hp": 1}
+        GAME_STATE["is_over"] = False
+        GAME_STATE["my_player"] = None
+
         CLIENT_LOGS_QUEUE.append("Вы отключились от сервера.")
 
 

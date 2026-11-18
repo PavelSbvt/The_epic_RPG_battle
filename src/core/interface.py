@@ -1,4 +1,3 @@
-
 import sys
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -8,7 +7,6 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QColor, QPalette
 
-from core.base import Warrior, Mage, Assassin, Battle, Actions, Character
 from server.client import Client, GAME_STATE
 
 
@@ -137,9 +135,8 @@ class CharacterCard(QFrame):
         "Assassin": ("#dc2626", "🗡️"),
     }
 
-    def __init__(self, title="Player 1", parent=None):
+    def __init__(self, title="Player", parent=None):
         super().__init__(parent)
-        self.char = None
         self.setObjectName("charCard")
         self.setMinimumWidth(280)
         self.setMinimumHeight(320)
@@ -150,7 +147,9 @@ class CharacterCard(QFrame):
 
         self.header = QLabel(title)
         self.header.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.header.setStyleSheet(f"font-size: 13px; color: {MUTED}; font-weight: 600; letter-spacing: 1px;")
+        self.header.setStyleSheet(
+            f"font-size: 13px; color: {MUTED}; font-weight: 600; letter-spacing: 1px;"
+        )
         layout.addWidget(self.header)
 
         self.icon_label = QLabel("❓")
@@ -160,27 +159,24 @@ class CharacterCard(QFrame):
 
         self.name_label = QLabel("Select Character")
         self.name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.name_label.setStyleSheet(f"font-size: 22px; font-weight: 800; color: {TEXT};")
+        self.name_label.setStyleSheet(
+            f"font-size: 22px; font-weight: 800; color: {TEXT};"
+        )
         layout.addWidget(self.name_label)
 
         hp_row = QHBoxLayout()
         hp_row.addWidget(QLabel("HP"))
         self.hp_bar = QProgressBar()
         self.hp_bar.setRange(0, 100)
-        self.hp_bar.setValue(100)
+        self.hp_bar.setValue(0)
         self.hp_bar.setFormat("%v / %m")
         self.hp_bar.setTextVisible(True)
         hp_row.addWidget(self.hp_bar, 1)
         layout.addLayout(hp_row)
 
-        self.power_label = QLabel("Power: —")
+        self.power_label = QLabel("")
         self.power_label.setStyleSheet(f"font-size: 14px; color: {GOLD};")
         layout.addWidget(self.power_label)
-
-        self.buff_label = QLabel("Buff: None")
-        self.buff_label.setWordWrap(True)
-        self.buff_label.setStyleSheet(f"font-size: 13px; color: {BLUE};")
-        layout.addWidget(self.buff_label)
 
         self.status_label = QLabel("")
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -199,35 +195,47 @@ class CharacterCard(QFrame):
             }}
         """)
 
-    def set_character(self, char):
-        self.char = char
-        if char is None:
-            self.icon_label.setText("❓")
-            self.name_label.setText("Select Character")
-            self.hp_bar.setRange(0, 100)
-            self.hp_bar.setValue(0)
-            self.power_label.setText("Power: —")
-            self.buff_label.setText("Buff: None")
-            self.status_label.setText("")
-            self._apply_style("#30363d")
+    def set_role(self, role: str):
+        """role: 'self' | 'enemy'"""
+        if role == "self":
+            self.header.setText("🟢 ВЫ")
+            self.header.setStyleSheet(
+                f"font-size: 13px; color: {GREEN}; font-weight: 800; letter-spacing: 1px;"
+            )
+        elif role == "enemy":
+            self.header.setText("🔴 ПРОТИВНИК")
+            self.header.setStyleSheet(
+                f"font-size: 13px; color: {RED}; font-weight: 800; letter-spacing: 1px;"
+            )
+        else:
+            self.header.setText("ОЖИДАНИЕ")
+            self.header.setStyleSheet(
+                f"font-size: 13px; color: {MUTED}; font-weight: 600; letter-spacing: 1px;"
+            )
+
+    def update_from_state(self, info: dict):
+        """info: {"name": ..., "hp": ..., "max_hp": ...}"""
+        name = info.get("name", "?")
+        hp = info.get("hp", 0)
+        max_hp = info.get("max_hp", 1) or 1
+
+        if name == "?":
+            self.reset()
             return
 
-        color, icon = self.COLORS.get(char.name, ("#888", "❓"))
+        color, icon = self.COLORS.get(name, ("#888", "❓"))
         self.icon_label.setText(icon)
-        self.name_label.setText(char.name)
-        self.name_label.setStyleSheet(f"font-size: 22px; font-weight: 800; color: {color};")
+        self.name_label.setText(name)
+        self.name_label.setStyleSheet(
+            f"font-size: 22px; font-weight: 800; color: {color};"
+        )
         self._apply_style(color)
-        self.update_stats()
 
-    def update_stats(self):
-        if not self.char:
-            return
-        c = self.char
-        self.hp_bar.setRange(0, c.max_hp)
-        self.hp_bar.setValue(c.hp)
-        self.hp_bar.setFormat(f"{c.hp} / {c.max_hp}")
+        self.hp_bar.setRange(0, max_hp)
+        self.hp_bar.setValue(hp)
+        self.hp_bar.setFormat(f"{hp} / {max_hp}")
 
-        pct = c.hp / c.max_hp if c.max_hp else 0
+        pct = hp / max_hp if max_hp else 0
         if pct > 0.6:
             chunk = GREEN
         elif pct > 0.3:
@@ -252,26 +260,29 @@ class CharacterCard(QFrame):
             }}
         """)
 
-        # Power (с учётом баффа ассасина)
-        effective = c.get_effective_power()
-        self.power_label.setText(f"⚔ Power: {effective}")
-
-        # Buffs
-        buffs = []
-        if c.iron_skin_active:
-            buffs.append("🛡️ Iron Skin")
-        if c.arcane_shield_active:
-            buffs.append("🔮 Arcane Shield")
-        if c.assassin_charges > 0:
-            buffs.append(f"🗡️ Instinct ({c.assassin_charges})")
-        self.buff_label.setText("✨ " + (", ".join(buffs) if buffs else "None"))
-
-        if not c.is_alive():
+        if hp <= 0:
             self.status_label.setText("💀 DEFEATED")
-            self.status_label.setStyleSheet(f"font-size: 14px; color: {RED}; font-weight: bold;")
+            self.status_label.setStyleSheet(
+                f"font-size: 14px; color: {RED}; font-weight: bold;"
+            )
         else:
             self.status_label.setText("Ready")
-            self.status_label.setStyleSheet(f"font-size: 12px; color: {GREEN};")
+            self.status_label.setStyleSheet(
+                f"font-size: 12px; color: {GREEN};"
+            )
+
+    def reset(self):
+        self.icon_label.setText("❓")
+        self.name_label.setText("Select Character")
+        self.name_label.setStyleSheet(
+            f"font-size: 22px; font-weight: 800; color: {TEXT};"
+        )
+        self.hp_bar.setRange(0, 100)
+        self.hp_bar.setValue(0)
+        self.hp_bar.setFormat("%v / %m")
+        self.power_label.setText("")
+        self.status_label.setText("")
+        self._apply_style("#30363d")
 
 
 class MainWindow(QMainWindow):
@@ -281,23 +292,17 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1100, 720)
         self.resize(1200, 800)
 
-        self.battle = None
-        self.char1 = None
-        self.char2 = None
+        self._roles_applied = False
 
         self._build_ui()
         self.setStyleSheet(STYLESHEET)
 
-        # Таймер для обновления интерфейса
-        self.update_timer = QTimer(self)
-        self.update_timer.timeout.connect(self._update_ui_from_server)
-        self.update_timer.start(100)
+        # Единственный таймер: синхронизация с GAME_STATE
+        self.game_timer = QTimer(self)
+        self.game_timer.timeout.connect(self._sync_with_server)
+        self.game_timer.start(100)
 
     def _build_ui(self) -> None:
-        """
-        Создание интерфейса главного окна.
-        """
-
         central = QWidget()
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
@@ -315,7 +320,7 @@ class MainWindow(QMainWindow):
         """)
         root.addWidget(title)
 
-        subtitle = QLabel("Сетевая битва • Ожидание игроков")
+        subtitle = QLabel("Сетевая битва • Выберите класс и ждите соперника")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle.setStyleSheet(f"font-size: 14px; color: {MUTED}; margin-bottom: 8px;")
         root.addWidget(subtitle)
@@ -324,22 +329,28 @@ class MainWindow(QMainWindow):
         top_row.setSpacing(20)
 
         self.status_label = QLabel("Статус: Подключение...")
-        self.status_label.setStyleSheet(f"font-size: 14px; color: {GOLD}; font-weight: bold;")
+        self.status_label.setStyleSheet(
+            f"font-size: 14px; color: {GOLD}; font-weight: bold;"
+        )
         top_row.addWidget(self.status_label)
 
         top_row.addStretch()
 
-        self.btn_start = GlowButton("НАЧАТЬ БОЙ", ACCENT)
-        self.btn_start.clicked.connect(self._start_battle)
-        self.btn_start.setVisible(False)
-        top_row.addWidget(self.btn_start)
+        class_label = QLabel("Ваш класс:")
+        class_label.setStyleSheet(f"font-size: 14px; color: {TEXT};")
+        top_row.addWidget(class_label)
+
+        self.class_combo = QComboBox()
+        self.class_combo.addItems(["— Choose —", "Warrior", "Mage", "Assassin"])
+        self.class_combo.currentTextChanged.connect(self._on_class_selected)
+        top_row.addWidget(self.class_combo)
 
         root.addLayout(top_row)
 
         mid = QHBoxLayout()
         mid.setSpacing(20)
 
-        self.card1 = CharacterCard("PLAYER 1")
+        self.card1 = CharacterCard("ОЖИДАНИЕ")
         mid.addWidget(self.card1)
 
         action_panel = QFrame()
@@ -363,24 +374,22 @@ class MainWindow(QMainWindow):
 
         ap_layout.addWidget(self._section_label("Выберите действие на этот ход"))
 
-        self.act1_buff = QPushButton("🛡️  Buff")
-        self.act1_normal = QPushButton("⚔️  Normal Attack")
-        self.act1_special = QPushButton("💥  Special Attack")
+        self.act_buff = QPushButton("🛡️  Buff")
+        self.act_normal = QPushButton("⚔️  Normal Attack")
+        self.act_special = QPushButton("💥  Special Attack")
 
-        for b in (self.act1_buff, self.act1_normal, self.act1_special):
-            b.setEnabled(True)
-            if b == self.act1_buff:
-                b.clicked.connect(Client.send_buff)
-            elif b == self.act1_normal:
-                b.clicked.connect(Client.send_normal_attack)
-            elif b == self.act1_special:
-                b.clicked.connect(Client.send_special_attack)
+        self.act_buff.clicked.connect(Client.send_buff)
+        self.act_normal.clicked.connect(Client.send_normal_attack)
+        self.act_special.clicked.connect(Client.send_special_attack)
+
+        for b in (self.act_buff, self.act_normal, self.act_special):
+            b.setEnabled(False)
             ap_layout.addWidget(b)
 
         ap_layout.addStretch()
         mid.addWidget(action_panel)
 
-        self.card2 = CharacterCard("PLAYER 2")
+        self.card2 = CharacterCard("ОЖИДАНИЕ")
         mid.addWidget(self.card2)
 
         root.addLayout(mid, 1)
@@ -395,222 +404,92 @@ class MainWindow(QMainWindow):
         self.log.setPlaceholderText("Ожидание начала битвы...")
         root.addWidget(self.log)
 
-        self.action_buttons = [self.act1_buff, self.act1_normal, self.act1_special]
+        self.action_buttons = [self.act_buff, self.act_normal, self.act_special]
 
-        for b in self.action_buttons:
-            b.setEnabled(False)
+    def _section_label(self, text: str) -> QLabel:
+        lbl = QLabel(text)
+        lbl.setStyleSheet(
+            f"font-size: 11px; color: {MUTED}; font-weight: 600; letter-spacing: 0.5px;"
+        )
+        return lbl
 
-        self.game_timer = QTimer(self)
-        self.game_timer.timeout.connect(self._sync_with_server)
-        self.game_timer.start(100)
-
-    def _update_ui_from_server(self):
-        """Читает GAME_STATE и обновляет карточки"""
-        if not GAME_STATE["p1"]["name"]:
+    def _on_class_selected(self, text: str) -> None:
+        if text == "— Choose —":
             return
+        Client.send_class_choice(text)
+        self.status_label.setText(f"Статус: выбран {text}, ждём соперника…")
+        self.status_label.setStyleSheet(
+            f"font-size: 14px; color: {GOLD}; font-weight: bold;"
+        )
+        self.class_combo.setEnabled(False)
 
-        # Обновляем карточку 1
-        self.card1.name_label.setText(GAME_STATE["p1"]["name"])
-        self.card1.hp_bar.setRange(0, GAME_STATE["p1"]["max_hp"])
-        self.card1.hp_bar.setValue(GAME_STATE["p1"]["hp"])
-
-        # Обновляем карточку 2
-        self.card2.name_label.setText(GAME_STATE["p2"]["name"])
-        self.card2.hp_bar.setRange(0, GAME_STATE["p2"]["max_hp"])
-        self.card2.hp_bar.setValue(GAME_STATE["p2"]["hp"])
-
-        # Если игра окончена, блокируем кнопки
-        if GAME_STATE["is_over"]:
-            self.btn_buff.setEnabled(False)
-            self.btn_normal.setEnabled(False)
-            self.btn_special.setEnabled(False)
+    def _apply_player_roles(self) -> None:
+        my = GAME_STATE.get("my_player")
+        if my is None:
+            return
+        if my == 1:
+            self.card1.set_role("self")
+            self.card2.set_role("enemy")
+        else:
+            self.card1.set_role("enemy")
+            self.card2.set_role("self")
+        self._roles_applied = True
 
     def _sync_with_server(self) -> None:
-        """
-        Читает глобальные переменные клиента и обновляет интерфейс.
-        Вызывается каждые 100 мс по таймеру.
-        """
-        # Импортируем внутри метода, чтобы не было циклического импорта
-        from server.client import GAME_STATE, CLIENT_LOGS_QUEUE
+        # 1. Роли — один раз, как только сервер сказал, кто мы
+        if not self._roles_applied and GAME_STATE.get("my_player"):
+            self._apply_player_roles()
 
-        # 1. Обновляем карточки, если данные от сервера пришли
-        if GAME_STATE["p1"]["name"] != "?":
-            # Если кнопки еще заблокированы, а игра началась — разблокируем
-            if not self.action_buttons[0].isEnabled() and not GAME_STATE["is_over"]:
-                for b in self.action_buttons:
-                    b.setEnabled(True)
-                self.status_label.setText("Статус: Игра идёт")
-                self.status_label.setStyleSheet(f"font-size: 14px; color: {GREEN}; font-weight: bold;")
+        # 2. Реванш: сервер сбросил игру (p1/p2 = "?") — снова можно выбрать класс
+        if GAME_STATE["p1"]["name"] == "?" and GAME_STATE["p2"]["name"] == "?":
+            if not self.class_combo.isEnabled():
+                self.class_combo.setEnabled(True)
+                self.class_combo.setCurrentIndex(0)
+            self.card1.update_from_state(GAME_STATE["p1"])
+            self.card2.update_from_state(GAME_STATE["p2"])
+            for b in self.action_buttons:
+                b.setEnabled(False)
+            if GAME_STATE.get("my_player"):
+                self.status_label.setText("Статус: выберите класс")
+                self.status_label.setStyleSheet(
+                    f"font-size: 14px; color: {GOLD}; font-weight: bold;"
+                )
+            self._flush_logs()
+            return
 
-            # Обновляем карточку 1
-            self.card1.name_label.setText(GAME_STATE["p1"]["name"])
-            self.card1.hp_bar.setRange(0, GAME_STATE["p1"]["max_hp"])
-            self.card1.hp_bar.setValue(GAME_STATE["p1"]["hp"])
-            self.card1.hp_bar.setFormat(f"{GAME_STATE['p1']['hp']} / {GAME_STATE['p1']['max_hp']}")
+        # 3. Обычное обновление карточек
+        self.card1.update_from_state(GAME_STATE["p1"])
+        self.card2.update_from_state(GAME_STATE["p2"])
 
-            # Обновляем карточку 2
-            self.card2.name_label.setText(GAME_STATE["p2"]["name"])
-            self.card2.hp_bar.setRange(0, GAME_STATE["p2"]["max_hp"])
-            self.card2.hp_bar.setValue(GAME_STATE["p2"]["hp"])
-            self.card2.hp_bar.setFormat(f"{GAME_STATE['p2']['hp']} / {GAME_STATE['p2']['max_hp']}")
-
-        # 2. Проверяем, не закончилась ли игра
+        # 4. Кнопки действий и статус
         if GAME_STATE["is_over"]:
             for b in self.action_buttons:
                 b.setEnabled(False)
-            self.status_label.setText("Статус: Игра окончена")
-            self.status_label.setStyleSheet(f"font-size: 14px; color: {RED}; font-weight: bold;")
+            self.status_label.setText("Статус: игра окончена")
+            self.status_label.setStyleSheet(
+                f"font-size: 14px; color: {RED}; font-weight: bold;"
+            )
+        else:
+            for b in self.action_buttons:
+                b.setEnabled(True)
+            self.status_label.setText("Статус: игра идёт")
+            self.status_label.setStyleSheet(
+                f"font-size: 14px; color: {GREEN}; font-weight: bold;"
+            )
 
-        # 3. Выводим новые сообщения из очереди логов
+        # 5. Логи
+        self._flush_logs()
+
+    def _flush_logs(self) -> None:
+        from server.client import CLIENT_LOGS_QUEUE
         while CLIENT_LOGS_QUEUE:
             msg = CLIENT_LOGS_QUEUE.pop(0)
             self._append_log(msg)
 
-    def _section_label(self, text: str) -> QLabel:
-        lbl = QLabel(text)
-        lbl.setStyleSheet(f"font-size: 11px; color: {MUTED}; font-weight: 600; letter-spacing: 0.5px;")
-        return lbl
-
-    def _create_char(self, name: str):
-        return {
-            "Warrior": Warrior,
-            "Mage": Mage,
-            "Assassin": Assassin,
-        }.get(name, lambda: None)()
-
-    def _on_select1(self, text: str):
-        self.char1 = self._create_char(text) if text != "— Choose —" else None
-        self.card1.set_character(self.char1)
-        self._check_ready()
-
-    def _on_select2(self, text: str):
-        self.char2 = self._create_char(text) if text != "— Choose —" else None
-        self.card2.set_character(self.char2)
-        self._check_ready()
-
-    def _check_ready(self):
-        ready = self.char1 is not None and self.char2 is not None
-        self.btn_start.setEnabled(ready and self.battle is None)
-
-    def _start_battle(self):
-        if not self.char1 or not self.char2:
-            return
-
-        # Создаём свежие экземпляры
-        self.char1 = self._create_char(self.char1.name)
-        self.char2 = self._create_char(self.char2.name)
-        self.card1.set_character(self.char1)
-        self.card2.set_character(self.char2)
-
-        self.battle = Battle(self.char1, self.char2)
-        self.combo1.setEnabled(False)
-        self.combo2.setEnabled(False)
-        self.btn_start.setEnabled(False)
-        self.btn_reset.setEnabled(True)
-
-        for b in self.act1_buttons + self.act2_buttons:
-            b.setEnabled(True)
-            b.setChecked(False)
-
-        self.selected_act1 = None
-        self.selected_act2 = None
-        self.btn_execute.setEnabled(False)
-
-        self._append_log(f"<b style='color:{ACCENT}'>⚔️ BATTLE STARTED!</b>")
-        self._append_log(f"{self.char1.name} vs {self.char2.name}")
-        self._append_log("─" * 40)
-
-    def _select_action(self, btn: QPushButton, player: int):
-        buttons = self.act1_buttons if player == 1 else self.act2_buttons
-        for b in buttons:
-            if b is not btn:
-                b.setChecked(False)
-
-        action_map = {
-            self.act1_buff: Actions.BUFF,
-            self.act1_normal: Actions.NORMAL_ATTACK,
-            self.act1_special: Actions.SPECIAL_ATTACK,
-            self.act2_buff: Actions.BUFF,
-            self.act2_normal: Actions.NORMAL_ATTACK,
-            self.act2_special: Actions.SPECIAL_ATTACK,
-        }
-        act = action_map.get(btn)
-
-        if player == 1:
-            self.selected_act1 = act if btn.isChecked() else None
-        else:
-            self.selected_act2 = act if btn.isChecked() else None
-
-        self.btn_execute.setEnabled(
-            self.selected_act1 is not None and self.selected_act2 is not None and self.battle is not None
-        )
-
-    def _execute_turn(self):
-        if not self.battle or self.selected_act1 is None or self.selected_act2 is None:
-            return
-
-        result = self.battle.play_turn(self.selected_act1, self.selected_act2)
-
-        act_names = {
-            Actions.BUFF: "Buff",
-            Actions.NORMAL_ATTACK: "Normal Attack",
-            Actions.SPECIAL_ATTACK: "Special Attack",
-        }
-
-        self._append_log(
-            f"<span style='color:{BLUE}'>{self.char1.name}</span> → {act_names[self.selected_act1]}   |   "
-            f"<span style='color:{PURPLE}'>{self.char2.name}</span> → {act_names[self.selected_act2]}"
-        )
-
-        if "won!" in result:
-            self._append_log(f"<b style='color:{GREEN}; font-size:15px'>{result}</b>")
-            self._end_battle()
-        elif result == "This battle is over!":
-            self._append_log(f"<span style='color:{MUTED}'>{result}</span>")
-        else:
-            self._append_log(f"<span style='color:{GOLD}'>{result}</span>")
-
-        self.card1.update_stats()
-        self.card2.update_stats()
-
-        for b in self.act1_buttons + self.act2_buttons:
-            b.setChecked(False)
-        self.selected_act1 = None
-        self.selected_act2 = None
-        self.btn_execute.setEnabled(False)
-
-        if self.battle.is_over:
-            self._end_battle()
-
-    def _end_battle(self):
-        for b in self.act1_buttons + self.act2_buttons:
-            b.setEnabled(False)
-        self.btn_execute.setEnabled(False)
-        self._append_log("─" * 40)
-        self._append_log("<b>Battle finished. Press RESET to play again.</b>")
-
-    def _reset(self):
-        self.battle = None
-        self.combo1.setEnabled(True)
-        self.combo2.setEnabled(True)
-        self.combo1.setCurrentIndex(0)
-        self.combo2.setCurrentIndex(0)
-        self.char1 = None
-        self.char2 = None
-        self.card1.set_character(None)
-        self.card2.set_character(None)
-        self.btn_start.setEnabled(False)
-        self.btn_reset.setEnabled(False)
-        for b in self.act1_buttons + self.act2_buttons:
-            b.setEnabled(False)
-            b.setChecked(False)
-        self.btn_execute.setEnabled(False)
-        self.log.clear()
-        self._append_log("Ready for a new epic battle...")
-
-    def _append_log(self, html: str):
+    def _append_log(self, html: str) -> None:
         self.log.append(html)
-        self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
+        sb = self.log.verticalScrollBar()
+        sb.setValue(sb.maximum())
 
 
 def main():
