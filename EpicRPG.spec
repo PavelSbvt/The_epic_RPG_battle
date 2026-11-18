@@ -32,7 +32,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['resources/images/icons/icon_pdf_maker_255_size.ico'],
+    icon=['resources/images/for_client_window/icons/epic-rpg-icon.ico'],
     contents_directory='.',
 )
 coll = COLLECT(
