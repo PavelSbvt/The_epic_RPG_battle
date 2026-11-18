@@ -1,19 +1,14 @@
-import sys
-from pathlib import Path
-
 from PyQt6.QtCore import QPoint, QTimer, pyqtSignal, Qt
-from PyQt6.QtWidgets import QWidget, QApplication
-from PyQt6.QtGui import QCloseEvent, QColor
-from PyQt6.uic import loadUi
+from PyQt6.QtGui import QCloseEvent
+from PyQt6.QtWidgets import QWidget
 
-from utils.output_rich import Rich
+from core.interface import (
+    MainWindow)
+from gui.ui.ui_client_window import Ui_client_window
+from gui.utils.fonts import Fonts
 from gui.utils.windows_animations import AnimationsManager
 from server.client import Client, CLIENT_LOGS_QUEUE
-from core.interface import (
-    MainWindow, QPalette,
-    ACCENT, TEXT, PANEL_BG,
-    CARD_BG, DARK_BG)
-from gui.utils.fonts import Fonts
+from utils.output_rich import Rich
 
 
 class ClientWindow(QWidget):
@@ -35,8 +30,11 @@ class ClientWindow(QWidget):
 
         Rich.enter_log("Показ окна клиента.")
 
-        ui_path = Path('src/gui/ui/client_window.ui').as_posix()
-        loadUi(ui_path, self)
+        self.ui = Ui_client_window()
+        self.ui.setupUi(self)
+
+        # Перенос всех атрибутов из self.ui в self
+        self.__dict__.update(self.ui.__dict__)
 
         self.labelTitleClient.setFont(Fonts.get_qfont("JetBrains_Regular", 12))
         self.textEditForLogs.setFont(Fonts.get_qfont("JetBrains_Regular", 8))

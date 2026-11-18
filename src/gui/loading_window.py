@@ -1,19 +1,18 @@
 from pathlib import Path
 
 from PyQt6.QtCore import QPoint, QTimer, pyqtSignal, Qt
-from PyQt6.QtWidgets import QWidget
 from PyQt6.QtGui import QPixmap
-from PyQt6.uic import loadUi
+from PyQt6.QtWidgets import QWidget
 
-from utils.output_rich import Rich
+from gui.ui.ui_loading_window import Ui_loading_window_2
+from gui.utils.fonts import Fonts
+from gui.utils.update_gui import (update_progress_bar_animation,
+                                  loading_window_img_click, update_animation_gradient)
 from gui.utils.windows_animations import AnimationsManager
 from gui.utils.windows_functions import (center_window,
-    background_window_by_time_of_day)
-
-from gui.utils.update_gui import (update_progress_bar_animation,
-    loading_window_img_click, update_animation_gradient)
-from gui.utils.fonts import Fonts
+                                         background_window_by_time_of_day)
 from utils.citations import get_citation_with_author
+from utils.output_rich import Rich
 
 
 class MyLoadingWindow(QWidget):
@@ -37,47 +36,25 @@ class MyLoadingWindow(QWidget):
 
         Rich.enter_log("Показ загрузочного окна.")
 
-        ui_path = Path('src/gui/ui/loading_window.ui').as_posix()
-        loadUi(ui_path, self)
+        self.ui = Ui_loading_window_2()
+        self.ui.setupUi(self)
+
+        # Перенос всех атрибутов из self.ui в self
+        self.__dict__.update(self.ui.__dict__)
+
 
         self.set_stylesheet_by_theme_in_settings()
 
         self.set_text_on_size_for_labels_citations()
 
         # установка
-        self.block_app_name.setFont(Fonts.get_qfont("JetBrains_Regular", 28))
+        self.block_app_name.setFont(Fonts.get_qfont("JetBrains_Regular", 24))
         self.lb_blc_m_load.setFont(Fonts.get_qfont("JetBrains_Medium", 8))
         self.lb_hi_prog.setFont(Fonts.get_qfont("JetBrains_Medium", 20))
         self.label_text.setFont(Fonts.get_qfont("JetBrains_Medium", 11))
 
         # Временная установка старых стилей (через Style)
         self.label_text.setStyleSheet(f"color: white;")
-        self.progress_bar.setStyleSheet(f"""
-            QProgressBar {{
-                background-color: #3C3F41;
-                border: none;
-                border-radius: 4px;
-                height: 8px;
-                text-align: center;
-                color: white;
-                font-size: 10px;
-                font-weight: bold;
-            }}
-            QProgressBar::chunk {{
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0  #2196F3,
-                    stop: 0.5 #42A5F5,
-                    stop: 1 #1E88E5
-                );
-                border-radius: 4px;
-                margin: 1px;
-            }}
-        """)
-
-        icon_path = Path("resources/images/icons/icon_pdf_maker.png")
-        self.icon.setPixmap(QPixmap(icon_path.as_posix()))
-        self.icon.setScaledContents(True)
 
         self.loading_window.clicked.connect(lambda: loading_window_img_click(self))
 
@@ -152,9 +129,9 @@ class MyLoadingWindow(QWidget):
         :return: None
         """
 
-        theme = "standard"
+        theme = "dark"
 
-        qss_path = Path(f"src/gui/styles/loading_window_{theme}.qss")
+        qss_path = Path(f"src/gui/styles/loading-window-{theme}.qss")
 
         if qss_path.exists():
             with open(qss_path, "r", encoding="utf-8") as f:

@@ -29,8 +29,7 @@
    <string>loading_window</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">
-</string>
+   <string notr="true"/>
   </property>
   <widget class="QWidget" name="widget_background_fill" native="true">
    <property name="enabled">
@@ -89,7 +88,7 @@
     <widget class="QLabel" name="block_app_name">
      <property name="geometry">
       <rect>
-       <x>50</x>
+       <x>10</x>
        <y>0</y>
        <width>320</width>
        <height>50</height>
@@ -116,32 +115,7 @@
       <string notr="true"/>
      </property>
      <property name="text">
-      <string>PDF_Maker</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="icon">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>10</y>
-       <width>35</width>
-       <height>35</height>
-      </rect>
-     </property>
-     <property name="minimumSize">
-      <size>
-       <width>35</width>
-       <height>35</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>35</width>
-       <height>35</height>
-      </size>
-     </property>
-     <property name="text">
-      <string/>
+      <string>Epic RPG buttle</string>
      </property>
     </widget>
     <widget class="QPushButton" name="loading_window">
@@ -271,7 +245,7 @@
          <string notr="true"/>
         </property>
         <property name="text">
-         <string>PDF_maker - приложение для автоматизации работы УПиАКВК, сборки и генерации pdf протоколов заседания экзаменационной комиссии по приему кандидатского экзамена.</string>
+         <string>A small RPG game with mages, warriors and assassins. It must have a user interface and a connection to a local server. educational project - school of the personnel reserve of science</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -395,7 +369,6 @@
       <bool>false</bool>
      </property>
     </widget>
-    <zorder>icon</zorder>
     <zorder>loading_window</zorder>
     <zorder>lb_blc_m_load</zorder>
     <zorder>block_app_name</zorder>
